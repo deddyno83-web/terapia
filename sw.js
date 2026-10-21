@@ -40,9 +40,12 @@ self.addEventListener("push", (e) => {
     return m <= nm + 5 && m >= nm - 30;
   });
   const titolo = due.length ? "Terapia delle " + due[0].ora : "Promemoria terapia";
+  const prossima = dosiDelGiorno(d).find((f) => aMinuti(f.ora) > nm);
   const corpo = due.length
     ? due.map((f) => f.nome + (doseTesto(f, d) ? " " + doseTesto(f, d) : "")).join(", ")
-    : "Apri l'app per vedere le medicine di oggi.";
+    : prossima
+      ? "Prossima medicina: " + prossima.nome + " alle " + prossima.ora
+      : "Apri l'app per vedere le medicine di oggi.";
   e.waitUntil(
     self.registration.showNotification(titolo, {
       body: corpo,

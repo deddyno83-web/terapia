@@ -117,7 +117,13 @@ const pad = (n) => String(n).padStart(2, "0");
 const ymd = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
 const chiave = (data, f) => ymd(data) + "|" + f.id;
 function lunedi(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
-function toggle(k) { if (prese[k]) delete prese[k]; else prese[k] = Date.now(); salva(); render(); }
+function toggle(k) {
+  if (prese[k]) {
+    if (!confirm("Vuoi davvero togliere la spunta?")) return;
+    delete prese[k];
+  } else prese[k] = Date.now();
+  salva(); render();
+}
 
 function renderOggi() {
   const ora = new Date(), d = (ora.getDay() + 6) % 7, nm = ora.getHours() * 60 + ora.getMinutes();
@@ -181,6 +187,7 @@ $("#prev").onclick = () => { offset--; render(); };
 $("#next").onclick = () => { offset++; render(); };
 $("#b-print").onclick = () => window.print();
 setInterval(render, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
 
 /* ---------- Notifiche push ---------- */
 const msg = (t) => ($("#msg").textContent = t);
