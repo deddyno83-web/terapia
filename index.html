@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2c5f8a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Terapia</title>
+<style>
+  :root { --blu:#2c5f8a; --verde:#2e8b57; --arancio:#d9822b; --grigio:#e4e7ea; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; font:20px/1.3 system-ui, Arial, sans-serif; color:#1b1b1b; background:#f4f6f8; }
+  header { background:var(--blu); color:#fff; padding:14px 16px; }
+  header h1 { margin:0; font-size:24px; }
+  header p { margin:4px 0 0; font-size:18px; opacity:.95; text-transform:capitalize; }
+  .tabs { display:flex; background:#fff; border-bottom:2px solid var(--grigio); }
+  .tabs button { flex:1; padding:14px 0; font-size:20px; border:0; background:none; font-weight:600; color:#555; }
+  .tabs button.on { color:var(--blu); border-bottom:4px solid var(--blu); }
+  main { padding:12px; max-width:760px; margin:0 auto; }
+  .progress { font-weight:700; margin:4px 4px 12px; font-size:19px; }
+  .dose { display:flex; align-items:center; gap:14px; width:100%; padding:16px; margin:0 0 10px; border:3px solid transparent; border-radius:16px; background:#fff; text-align:left; font:inherit; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+  .dose .chk { flex:none; width:44px; height:44px; border:4px solid #333; border-radius:10px; display:grid; place-items:center; font-size:32px; line-height:1; color:#fff; }
+  .dose .ora { font-weight:800; font-size:24px; min-width:70px; }
+  .dose .nome { font-weight:700; font-size:22px; }
+  .dose small { font-weight:600; color:#555; font-size:17px; margin-left:6px; }
+  .dose.prossima { border-color:var(--blu); }
+  .dose.ritardo { border-color:var(--arancio); background:#fff5e9; }
+  .dose.presa { background:#e7f5ec; }
+  .dose.presa .chk { background:var(--verde); border-color:var(--verde); }
+  .dose.presa .chk::after { content:"\2713"; }
+  .dose.presa .nome { text-decoration:line-through; color:#555; }
+  .box { background:#fff; border-radius:14px; padding:14px; margin:16px 0; box-shadow:0 1px 3px rgba(0,0,0,.12); font-size:18px; }
+  .box button, .nav button { font:inherit; font-weight:700; padding:12px 16px; border-radius:12px; border:0; background:var(--blu); color:#fff; margin:4px 6px 4px 0; }
+  .box button.sec, .nav button.sec { background:var(--grigio); color:#222; }
+  #msg { margin-top:8px; font-weight:600; }
+  .nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .nav strong { font-size:19px; text-align:center; }
+  table { border-collapse:collapse; width:100%; background:#fff; font-size:15px; }
+  th, td { border:1px solid #9bb3c9; padding:4px 2px; text-align:center; }
+  th { background:var(--blu); color:#fff; font-size:13px; }
+  th.oggi { background:#d9822b; }
+  td.f { text-align:left; padding:6px; font-weight:700; }
+  td.f small { display:block; font-weight:400; color:#555; font-size:12px; }
+  td.no { background:#cfcfcf; color:#777; }
+  td button { width:34px; height:34px; border:3px solid #333; border-radius:7px; background:#fff; color:#fff; font-size:22px; line-height:1; padding:0; }
+  td button.presa { background:var(--verde); border-color:var(--verde); }
+  td button.presa::after { content:"\2713"; }
+  td button.manca { border-color:#c0392b; }
+  td .d { display:block; font-weight:700; font-size:12px; color:#000; }
+  #settimana { display:none; }
+  .wk-wrap { overflow-x:auto; }
+  @media (min-width:700px) { main { max-width:1100px; } }
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    body { background:#fff; }
+    header p, .tabs, #oggi, .box, .nav button, .noprint { display:none !important; }
+    #settimana { display:block !important; }
+    main { max-width:none; padding:0; }
+    table { font-size:16px; }
+    td button { width:30px; height:30px; }
+    td { height:48px; }
+    th { background:#2c5f8a !important; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    td.no { background:#cfcfcf !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Terapia</h1>
+  <p id="data"></p>
+</header>
+<nav class="tabs">
+  <button id="t-oggi" class="on">Oggi</button>
+  <button id="t-sett">Settimana</button>
+</nav>
+
+<main>
+  <section id="oggi">
+    <div class="progress" id="progress"></div>
+    <div id="lista"></div>
+
+    <div class="box" id="pushbox">
+      <div><strong>Promemoria</strong></div>
+      <div id="pushstato">Attiva le notifiche per ricevere l'avviso agli orari delle medicine.</div>
+      <button id="b-push">Attiva promemoria</button>
+      <button id="b-test" class="sec" style="display:none">Prova notifica</button>
+      <button id="b-install" class="sec" style="display:none">Installa app</button>
+      <div id="msg"></div>
+    </div>
+  </section>
+
+  <section id="settimana">
+    <div class="nav noprint">
+      <button id="prev" class="sec">&larr;</button>
+      <strong id="titolo-sett"></strong>
+      <button id="next" class="sec">&rarr;</button>
+    </div>
+    <div class="wk-wrap"><table id="tabella"></table></div>
+    <div class="box noprint">
+      <button id="b-print">Stampa settimana</button>
+      <div style="margin-top:6px;font-size:16px">Le caselle con il segno sono le medicine prese. Le celle grigie sono giorni in cui il farmaco non va preso.</div>
+    </div>
+  </section>
+</main>
+
+<script src="terapia.js"></script>
+<script src="config.js"></script>
+<script>
+const $ = (s) => document.querySelector(s);
+let vista = "oggi", offset = 0, prese = {};
+try { prese = JSON.parse(localStorage.getItem("prese") || "{}"); } catch (e) {}
+const salva = () => { try { localStorage.setItem("prese", JSON.stringify(prese)); } catch (e) {} };
+
+const pad = (n) => String(n).padStart(2, "0");
+const ymd = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const chiave = (data, f) => ymd(data) + "|" + f.id;
+function lunedi(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+function toggle(k) { if (prese[k]) delete prese[k]; else prese[k] = Date.now(); salva(); render(); }
+
+function renderOggi() {
+  const ora = new Date(), d = (ora.getDay() + 6) % 7, nm = ora.getHours() * 60 + ora.getMinutes();
+  $("#data").textContent = ora.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+  const lista = dosiDelGiorno(d);
+  const fatte = lista.filter((f) => prese[chiave(ora, f)]).length;
+  $("#progress").textContent = fatte + " di " + lista.length + " prese oggi";
+  let prossimaTrovata = false;
+  $("#lista").innerHTML = "";
+  lista.forEach((f) => {
+    const k = chiave(ora, f), presa = !!prese[k], m = aMinuti(f.ora);
+    let cls = "dose";
+    if (presa) cls += " presa";
+    else if (m < nm - 60) cls += " ritardo";
+    else if (!prossimaTrovata) { cls += " prossima"; prossimaTrovata = true; }
+    const b = document.createElement("button");
+    b.className = cls;
+    const dose = doseTesto(f, d);
+    b.innerHTML = '<span class="chk"></span><span class="ora">' + f.ora + '</span><span class="nome">' + f.nome + (dose ? "<small>" + dose + "</small>" : "") + "</span>";
+    b.onclick = () => toggle(k);
+    $("#lista").appendChild(b);
+  });
+}
+
+function renderSettimana() {
+  const mon = lunedi(new Date()); mon.setDate(mon.getDate() + 7 * offset);
+  const giorni = [...Array(7)].map((_, i) => { const x = new Date(mon); x.setDate(mon.getDate() + i); return x; });
+  const oggi = ymd(new Date()), adesso = Date.now();
+  const f2 = (x) => pad(x.getDate()) + "/" + pad(x.getMonth() + 1);
+  $("#titolo-sett").textContent = "Dal " + f2(giorni[0]) + " al " + f2(giorni[6]);
+  let h = "<thead><tr><th>Ora</th><th>Farmaco</th>" +
+    giorni.map((x, i) => '<th class="' + (ymd(x) === oggi ? "oggi" : "") + '">' + GIORNI[i].slice(0, 3).toUpperCase() + "<br>" + f2(x) + "</th>").join("") + "</tr></thead><tbody>";
+  FARMACI.slice().sort((a, b) => aMinuti(a.ora) - aMinuti(b.ora)).forEach((f) => {
+    h += "<tr><td><strong>" + f.ora + '</strong></td><td class="f">' + f.nome + (f.dose ? "<small>" + f.dose + (f.doseGiorno ? " (dom. " + f.doseGiorno[6] + ")" : "") + "</small>" : "") + "</td>";
+    giorni.forEach((x, i) => {
+      if (f.giorni.indexOf(i) < 0) { h += '<td class="no">&mdash;</td>'; return; }
+      const k = chiave(x, f), presa = !!prese[k];
+      const fine = new Date(x); const p = f.ora.split(":"); fine.setHours(+p[0], +p[1] + 60, 0, 0);
+      const manca = !presa && fine.getTime() < adesso;
+      const dd = doseTesto(f, i);
+      h += '<td><button data-k="' + k + '" class="' + (presa ? "presa" : manca ? "manca" : "") + '"></button>' +
+        (f.doseGiorno && f.doseGiorno[i] ? '<span class="d">' + dd + "</span>" : "") + "</td>";
+    });
+    h += "</tr>";
+  });
+  $("#tabella").innerHTML = h + "</tbody>";
+  $("#tabella").querySelectorAll("button[data-k]").forEach((b) => (b.onclick = () => toggle(b.dataset.k)));
+}
+
+function render() {
+  $("#oggi").style.display = vista === "oggi" ? "block" : "none";
+  $("#settimana").style.display = vista === "sett" ? "block" : "none";
+  $("#t-oggi").className = vista === "oggi" ? "on" : "";
+  $("#t-sett").className = vista === "sett" ? "on" : "";
+  renderOggi();
+  renderSettimana();
+}
+$("#t-oggi").onclick = () => { vista = "oggi"; render(); };
+$("#t-sett").onclick = () => { vista = "sett"; render(); };
+$("#prev").onclick = () => { offset--; render(); };
+$("#next").onclick = () => { offset++; render(); };
+$("#b-print").onclick = () => window.print();
+setInterval(render, 60000);
+
+/* ---------- Notifiche push ---------- */
+const msg = (t) => ($("#msg").textContent = t);
+const b64 = (s) => { const p = "=".repeat((4 - (s.length % 4)) % 4); const r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from([...r].map((c) => c.charCodeAt(0))); };
+const pushOk = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const configurato = CONFIG.WORKER_URL && CONFIG.VAPID_PUBLIC_KEY;
+
+async function post(path, body) {
+  const r = await fetch(CONFIG.WORKER_URL + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error("Errore server " + r.status);
+}
+
+async function statoPush() {
+  if (!configurato) { $("#pushstato").textContent = "Promemoria non ancora configurati (vedi README)."; $("#b-push").style.display = "none"; return; }
+  if (!pushOk) { $("#pushstato").textContent = "Questo browser non supporta le notifiche."; $("#b-push").style.display = "none"; return; }
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub && Notification.permission === "granted") {
+    $("#pushstato").textContent = "Promemoria attivi su questo telefono.";
+    $("#b-push").textContent = "Disattiva promemoria";
+    $("#b-test").style.display = "inline-block";
+  } else {
+    $("#pushstato").textContent = "Attiva le notifiche per ricevere l'avviso agli orari delle medicine.";
+    $("#b-push").textContent = "Attiva promemoria";
+    $("#b-test").style.display = "none";
+  }
+}
+
+$("#b-push").onclick = async () => {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      await post("/unsubscribe", { endpoint: sub.endpoint }).catch(() => {});
+      await sub.unsubscribe();
+      msg("Promemoria disattivati.");
+    } else {
+      if ((await Notification.requestPermission()) !== "granted") return msg("Permesso negato: abilita le notifiche dalle impostazioni del telefono.");
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(CONFIG.VAPID_PUBLIC_KEY) });
+      await post("/subscribe", sub.toJSON());
+      msg("Fatto! Riceverai i promemoria agli orari.");
+    }
+    statoPush();
+  } catch (e) { msg("Errore: " + e.message); }
+};
+
+$("#b-test").onclick = async () => {
+  try {
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    await post("/test", sub.toJSON());
+    msg("Notifica di prova inviata, attendi qualche secondo.");
+  } catch (e) { msg("Errore: " + e.message); }
+};
+
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; $("#b-install").style.display = "inline-block"; });
+$("#b-install").onclick = async () => { if (installEvt) { installEvt.prompt(); installEvt = null; $("#b-install").style.display = "none"; } };
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").then(statoPush).catch(() => {});
+else statoPush();
+render();
+</script>
+</body>
+</html>

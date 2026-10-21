@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genera chiavi VAPID</title>
+<style>
+  body { font: 16px/1.4 system-ui, Arial, sans-serif; max-width: 800px; margin: 24px auto; padding: 0 16px; }
+  textarea { width: 100%; min-height: 90px; font-family: monospace; font-size: 13px; }
+  button { font-size: 18px; padding: 10px 16px; }
+  .warn { background: #fff3cd; padding: 10px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<h1>Genera chiavi VAPID</h1>
+<p>Queste chiavi servono al Worker per inviare le notifiche. Vengono create nel tuo browser, non vengono inviate da nessuna parte.</p>
+<button id="go">Genera chiavi</button>
+
+<h3>1. Chiave pubblica</h3>
+<p>Va in <code>config.js</code> (VAPID_PUBLIC_KEY) e nella variabile <code>VAPID_PUBLIC_KEY</code> del Worker.</p>
+<textarea id="pub" readonly></textarea>
+
+<h3>2. Chiave privata (JWK)</h3>
+<p class="warn">Segreta: va solo nel secret <code>VAPID_PRIVATE_JWK</code> del Worker. Non metterla su GitHub.</p>
+<textarea id="priv" readonly></textarea>
+
+<script>
+const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+document.getElementById("go").onclick = async () => {
+  const kp = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  document.getElementById("pub").value = b64u(await crypto.subtle.exportKey("raw", kp.publicKey));
+  document.getElementById("priv").value = JSON.stringify(await crypto.subtle.exportKey("jwk", kp.privateKey));
+};
+</script>
+</body>
+</html>
