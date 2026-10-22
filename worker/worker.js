@@ -10,6 +10,9 @@
 
 const TIMEZONE = "Europe/Rome";
 
+// Quanti minuti PRIMA dell'orario della medicina arriva la notifica (multiplo di 5)
+const ANTICIPO_MIN = 10;
+
 // Orari (ora di Roma) e giorni: 0=Lun ... 6=Dom. Tieni allineato con terapia.js
 const ALL = [0, 1, 2, 3, 4, 5, 6];
 const SCHEDULE = [
@@ -119,7 +122,8 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    const { day, hm } = romeNow(event.scheduledTime);
+    // Guarda avanti di ANTICIPO_MIN minuti: se tra poco c'è una medicina, avvisa ora
+    const { day, hm } = romeNow(event.scheduledTime + ANTICIPO_MIN * 60000);
     if (!SCHEDULE.some((s) => s.ora === hm && s.giorni.includes(day))) return;
     ctx.waitUntil(notifyAll(env));
   },
