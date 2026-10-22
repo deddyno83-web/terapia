@@ -37,9 +37,12 @@ self.addEventListener("push", (e) => {
   const nm = now.getHours() * 60 + now.getMinutes();
   const due = dosiDelGiorno(d).filter((f) => {
     const m = aMinuti(f.ora);
-    return m <= nm + 5 && m >= nm - 30;
+    return m <= nm + 20 && m >= nm - 5;
   });
-  const titolo = due.length ? "Terapia delle " + due[0].ora : "Promemoria terapia";
+  const diff = due.length ? aMinuti(due[0].ora) - nm : 0;
+  const titolo = due.length
+    ? diff > 1 ? "Tra " + diff + " minuti: terapia delle " + due[0].ora : "Ora della terapia (" + due[0].ora + ")"
+    : "Promemoria terapia";
   const prossima = dosiDelGiorno(d).find((f) => aMinuti(f.ora) > nm);
   const corpo = due.length
     ? due.map((f) => f.nome + (doseTesto(f, d) ? " " + doseTesto(f, d) : "")).join(", ")
